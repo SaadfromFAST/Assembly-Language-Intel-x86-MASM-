@@ -1,1 +1,449 @@
+INCLUDE Irvine32.inc 
 
+.data 
+;------------------------------------------------------QUESTION 1-----------------------------------------------------------
+comment @
+first db "Enter the number for the row: ",0Ah,0
+second db "Enter the number for the column: ",0Ah,0
+rows dd ?
+cols dd ?
+@
+
+;------------------------------------------------------QUESTION 2-----------------------------------------------------------
+comment @
+first db "Colour pallete menu 1) Red, 2) Yellow, 3) Green",0Ah,0
+second db "1) Choose the foreground color",0Ah,0
+third db "2) Choose the background color", 0Ah,0
+fourth db "3) Enter the number for the row: ",0Ah,0
+fifth db "4) Enter the number for the column: ",0Ah,0
+rows dd ?
+cols dd ?
+@
+
+;------------------------------------------------------QUESTION 3-----------------------------------------------------------
+comment @
+first db "Enter the number for the row: ",0Ah,0
+second db "Enter the number for the column: ",0Ah,0
+third db "1) Choose the foreground color",0Ah,0
+fourth db "2) Choose the background color", 0Ah,0
+rows dd ?
+cols dd ?
+foreground dd ?
+background dd ?
+prompt db "Enter the string: (MAX 50 CHARACTERS): "
+stringtxt db 52 dup (?)
+@
+
+;------------------------------------------------------QUESTION 4-----------------------------------------------------------
+comment @
+first db "Enter the width and height of the box simultaneously: ",0Ah,0
+second db "Enter the border color and the fill color of the box: ",0Ah,0
+third db "Enter the number for the row: ",0Ah,0
+fourth db "Enter the number for the column: ",0Ah,0
+rows dd ?
+cols dd ?
+widthh dd ?
+heightt dd ?
+borderColor dd ?
+fillColor dd ?
+currentRow dd ?
+currentCol dd ?
+@
+
+;------------------------------------------------------QUESTION 5-----------------------------------------------------------
+snakeX BYTE 40              ; Snake X position (column)
+snakeY BYTE 12              ; Snake Y position (row)
+snakeChar BYTE '*'          ; Snake character
+gameSpeed DWORD 200         ; Delay in milliseconds
+currentDirection BYTE 77    ; Initial direction (Right=77)
+
+.code
+main PROC
+;------------------------------------------------------QUESTION 1-----------------------------------------------------------
+comment @
+mov edx, offset first
+call writestring
+
+call readint
+mov rows, eax
+
+mov edx, offset second
+call writestring
+
+call readint
+mov cols, eax
+
+mov dh, byte ptr [rows]
+mov dl, byte ptr [cols]
+mov al, 42
+call Gotoxy
+call writechar
+@
+
+;------------------------------------------------------QUESTION 2-----------------------------------------------------------
+comment @
+mov edx, offset first
+call writestring
+
+call readint
+cmp eax, 1
+je Redd
+
+cmp eax, 2
+je Yelloww
+
+cmp eax, 3
+je Greenn
+
+Redd:
+mov eax, 4
+call SetTextColor
+jmp NEXT
+
+Yelloww:
+mov eax, 14
+call SetTextColor
+jmp NEXT
+
+Greenn:
+mov eax, 2
+call SetTextColor
+
+NEXT:
+mov edx, offset second
+call writestring
+
+mov edx, offset third
+call writestring
+
+mov edx, offset fourth
+call writestring
+
+mov edx, offset fifth
+call writestring
+
+call readint
+mov ebx, eax
+
+call readint
+SHL eax, 4
+add eax, ebx
+call SetTextColor
+
+call readint
+mov rows, eax
+
+call readint
+mov cols, eax
+
+mov dh, byte ptr [rows]
+mov dl, byte ptr [cols]
+mov al, 42
+call Gotoxy
+call writechar
+@
+
+;-----------------------------------------------------------------------QUESTION 3--------------------------------------------------------------------
+comment @
+mov edx, offset first
+call writestring
+
+mov edx, offset second
+call writestring
+
+call readint
+mov rows, eax
+
+call readint
+mov cols, eax
+
+mov edx, offset third
+call writestring
+
+mov edx, offset fourth 
+call writestring
+
+call readint
+mov foreground, eax
+
+call readint
+mov background, eax
+
+mov edx, offset prompt
+call writestring
+
+mov edx, offset stringtxt
+mov ecx, lengthof stringtxt
+call readstring
+
+mov eax, background
+SHL eax, 4
+add eax, foreground
+
+call SetTextColor
+
+mov dh, byte ptr [rows]
+mov dl, byte ptr [cols]
+call Gotoxy
+
+mov edx, offset stringtxt
+call writestring
+@
+
+;--------------------------------------------------------------QUESTION 4--------------------------------------------------------
+comment @
+    ; Get width and height
+    mov edx, offset first
+    call writestring
+    
+    call readint
+    mov widthh, eax
+    
+    call readint
+    mov heightt, eax
+    
+    ; Get border and fill colors
+    mov edx, offset second
+    call writestring
+    
+    call readint
+    mov borderColor, eax
+    
+    call readint
+    mov fillColor, eax
+    
+    ; Get starting coordinates
+    mov edx, offset third
+    call writestring
+    
+    call readint
+    mov rows, eax
+    
+    mov edx, offset fourth
+    call writestring
+    
+    call readint
+    mov cols, eax
+    
+    ; Draw the rectangle using nested loops
+    mov ecx, 0                  ; Outer loop counter (row counter)
+    mov currentRow, ecx
+    
+OuterLoop:
+    mov ecx, currentRow
+    cmp ecx, heightt            ; Check if we've drawn all rows
+    jge DoneDrawing
+    
+    mov ecx, 0                  ; Inner loop counter (column counter)
+    mov currentCol, ecx
+    
+InnerLoop:
+    mov ecx, currentCol
+    cmp ecx, widthh             ; Check if we've drawn all columns in this row
+    jge NextRow
+    
+    ; Determine if current position is border or fill
+    mov ecx, currentRow
+    cmp ecx, 0                  ; First row?
+    je DrawBorder
+    
+    mov ecx, currentRow
+    mov eax, heightt
+    dec eax
+    cmp ecx, eax                ; Last row?
+    je DrawBorder
+    
+    mov ecx, currentCol
+    cmp ecx, 0                  ; First column?
+    je DrawBorder
+    
+    mov ecx, currentCol
+    mov eax, widthh
+    dec eax
+    cmp ecx, eax                ; Last column?
+    je DrawBorder
+    
+    ; It's a fill position
+    jmp DrawFill
+    
+DrawBorder:
+    mov eax, borderColor
+    call SetTextColor
+    jmp SetPosition
+    
+DrawFill:
+    mov eax, fillColor
+    call SetTextColor
+    
+SetPosition:
+    ; Calculate actual screen position
+    mov eax, rows
+    add eax, currentRow
+    mov dh, al                  ; DH = row position
+    
+    mov eax, cols
+    add eax, currentCol
+    mov dl, al                  ; DL = column position
+    
+    call Gotoxy
+    
+    ; Draw the character (using space or block character)
+    mov al, 219                 ; ASCII block character (?)
+    call WriteChar
+    
+    ; Increment column counter
+    mov ecx, currentCol
+    inc ecx
+    mov currentCol, ecx
+    jmp InnerLoop
+    
+NextRow:
+    ; Increment row counter
+    mov ecx, currentRow
+    inc ecx
+    mov currentRow, ecx
+    jmp OuterLoop
+    
+DoneDrawing:
+    ; Reset text color to default (white on black)
+    mov eax, 7
+    call SetTextColor
+    
+    ; Move cursor below the rectangle
+    mov eax, rows
+    add eax, heightt
+    inc eax
+    mov dh, al
+    mov dl, 0
+    call Gotoxy
+@
+
+;--------------------------------------------------------------QUESTION 5--------------------------------------------------------
+ 
+    call Clrscr
+    
+GameLoop:
+
+    mov dh, snakeY
+    mov dl, snakeX
+    call Gotoxy
+    mov al, ' '
+    call WriteChar
+    
+
+    call ReadKey               
+    jz NoKeyPressed          
+    
+
+    cmp al, 0                 
+    jne NoKeyPressed
+    
+
+    cmp ah, 72                 
+    je MoveUp
+    
+    cmp ah, 80                 
+    je MoveDown
+    
+    cmp ah, 75                 
+    je MoveLeft
+    
+    cmp ah, 77                  
+    je MoveRight
+    
+    jmp NoKeyPressed            
+    
+MoveUp:
+    mov currentDirection, 72
+    jmp NoKeyPressed
+    
+MoveDown:
+    mov currentDirection, 80
+    jmp NoKeyPressed
+    
+MoveLeft:
+    mov currentDirection, 75
+    jmp NoKeyPressed
+    
+MoveRight:
+    mov currentDirection, 77
+    
+NoKeyPressed:
+    mov al, currentDirection
+    
+    cmp al, 72                 
+    je UpdateUp
+    
+    cmp al, 80               
+    je UpdateDown
+    
+    cmp al, 75                 
+    je UpdateLeft
+    
+    cmp al, 77                 
+    je UpdateRight
+    
+UpdateUp:
+    dec snakeY
+    mov eax, 14                
+    call SetTextColor
+    jmp CheckBoundaries
+    
+UpdateDown:
+    inc snakeY
+    mov eax, 12                
+    call SetTextColor
+    jmp CheckBoundaries
+    
+UpdateLeft:
+    dec snakeX
+    mov eax, 11                 
+    call SetTextColor
+    jmp CheckBoundaries
+    
+UpdateRight:
+    inc snakeX
+    mov eax, 10                 
+    call SetTextColor
+    
+CheckBoundaries:
+
+    cmp snakeX, 80             
+    jl CheckXLower
+    mov snakeX, 0               
+    jmp CheckYBoundaries
+    
+CheckXLower:
+    cmp snakeX, 0               
+    jge CheckYBoundaries
+    mov snakeX, 79              
+    
+CheckYBoundaries:
+
+    cmp snakeY, 25              
+    jl CheckYLower
+    mov snakeY, 0              
+    jmp DrawSnake
+    
+CheckYLower:
+    cmp snakeY, 0               
+    jge DrawSnake
+    mov snakeY, 24              
+    
+DrawSnake:
+
+    mov dh, snakeY
+    mov dl, snakeX
+    call Gotoxy
+    mov al, snakeChar
+    call WriteChar
+    
+
+    mov eax, gameSpeed
+    call Delay
+    
+    jmp GameLoop               
+
+    exit
+main ENDP
+END main
